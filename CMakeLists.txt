@@ -9,7 +9,7 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt5 REQUIRED COMPONENTS Widgets)
 
-add_executable(auto_shutdown WIN32 main.cpp)
+add_executable(auto_shutdown WIN32 main.cpp resources.qrc)
 
 target_link_libraries(auto_shutdown PRIVATE
     Qt5::Widgets

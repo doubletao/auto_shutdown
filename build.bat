@@ -23,12 +23,13 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 if not exist build mkdir build
-cd build
+pushd build
 
 echo Configuring CMake...
 cmake -DCMAKE_PREFIX_PATH="%QT_PATH%" -G "Visual Studio 16 2019" -A x64 ..
 if %ERRORLEVEL% NEQ 0 (
     echo CMake configuration failed
+    popd
     pause
     exit /b 1
 )
@@ -38,6 +39,7 @@ echo Building...
 cmake --build . --config Release
 if %ERRORLEVEL% NEQ 0 (
     echo Build failed
+    popd
     pause
     exit /b 1
 )
@@ -55,4 +57,5 @@ if %ERRORLEVEL% EQU 0 (
     echo Deployment failed
 )
 
+popd
 pause

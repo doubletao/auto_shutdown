@@ -1,7 +1,7 @@
 # Auto Shutdown - Power Detection Auto Shutdown Tool
 
-Monitors power status, shows a countdown dialog when running on battery.
-User can cancel shutdown within 60 seconds.
+Resident process that monitors power status. Shows a countdown dialog when running on battery.
+Runs in system tray with configurable timer intervals.
 
 ## Development Environment
 
@@ -11,13 +11,30 @@ User can cancel shutdown within 60 seconds.
 
 ## Features
 
-- Silent power status detection on startup
-- AC power: no UI shown, exits immediately
-- Battery power: shows a top-most dialog
-  - 60 second countdown
+- Runs as a resident process in system tray
+- Configurable power detection interval via config.ini
+- Configurable shutdown countdown via config.ini
+- Tray menu:
+  - **立即检测** - Trigger power detection immediately
+  - **打开配置** - Open config.ini with Notepad
+  - **退出** - Exit the application
+- Shows a top-most dialog when running on battery power
   - Displays current battery level
   - Cancel button to abort shutdown
   - Window stays always on top
+
+## Configuration
+
+`config.ini` in the same directory as the executable:
+
+```ini
+[General]
+; Detection interval in seconds (default: 60)
+DetectInterval=60
+
+; Shutdown countdown in seconds after battery detected (default: 60)
+ShutdownCountdown=60
+```
 
 ## Build Instructions
 
@@ -54,6 +71,7 @@ deploy.bat
 
 After successful build, the `build\Release` folder contains:
 - `auto_shutdown.exe` - Main executable
+- `config.ini` - Configuration file
 - Qt5Core.dll, Qt5Gui.dll, Qt5Widgets.dll - Qt runtime libraries
 - Platform plugins and other dependencies
 
@@ -61,14 +79,15 @@ The entire `Release` folder can be copied to any Windows machine.
 
 ## Deployment Suggestion
 
-Add to Windows Task Scheduler:
+Add to Windows Startup:
 
-1. Open "Task Scheduler"
-2. Create Task
-   - Trigger: At log on
-   - Action: Start a program → select `auto_shutdown.exe`
-   - Conditions: **UNCHECK** "Start the task only if the computer is on AC power"
-   - Settings: Check "Run whether user is logged on or not"
+1. Press `Win+R`, type `shell:startup`
+2. Create a shortcut to `auto_shutdown.exe` in the opened folder
+
+Or use Task Scheduler for more control:
+- Trigger: At log on
+- Action: Start a program
+- Run with highest privileges (recommended for shutdown)
 
 ## Technical Notes
 
@@ -76,3 +95,5 @@ Core Windows APIs:
 - `GetSystemPowerStatus()` - Get system power status
 - `ExitWindowsEx()` - Perform system shutdown
 - Qt 5.15.2 - GUI framework
+- `QSystemTrayIcon` - System tray integration
+- `QSettings` - INI configuration file
