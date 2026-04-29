@@ -279,12 +279,23 @@ private:
 
 int main(int argc, char *argv[])
 {
+    HANDLE hMutex = CreateMutexW(NULL, TRUE, L"AutoShutdown_Singleton_Mutex");
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        CloseHandle(hMutex);
+        return 0;
+    }
+
     QApplication app(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
 
     MainWindow window;
     window.show();
-    return app.exec();
+    int ret = app.exec();
+
+    ReleaseMutex(hMutex);
+    CloseHandle(hMutex);
+    return ret;
 }
 
 #include "main.moc"
