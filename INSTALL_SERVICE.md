@@ -43,7 +43,7 @@ C:\Tools\nssm.exe start AutoShutdown
 
 Check log file:
 ```
-C:\Users\<YourName>\Documents\auto_shutdown\log.log
+C:\ProgramData\auto_shutdown\log.log
 ```
 
 Or: `services.msc` → Find "AutoShutdown" → Status should be "Running"
@@ -66,6 +66,6 @@ C:\Tools\nssm.exe remove AutoShutdown confirm
 ## Notes
 
 - **Service mode** (`--service`): No UI, no dialog, shutdown silently when on battery
-- **Log location**: `%USERPROFILE%\Documents\auto_shutdown\log.log`
+- **Log location**: `C:\ProgramData\auto_shutdown\log.log`
 - Log is cleared on service startup, appended during runtime
 - Log file is opened/closed on each write (no file locking)

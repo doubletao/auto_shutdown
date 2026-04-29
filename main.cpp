@@ -293,8 +293,7 @@ private:
 
 void writeServiceLog(const QString &message)
 {
-    QString docPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    QString logDir = docPath + "/auto_shutdown";
+    QString logDir = "C:/ProgramData/auto_shutdown";
     QString logPath = logDir + "/log.log";
 
     QDir().mkpath(logDir);
@@ -318,8 +317,7 @@ void runServiceMode(int detectInterval, int shutdownCountdown)
     }
 
     // Clear log on startup
-    QString docPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-    QString logPath = docPath + "/auto_shutdown/log.log";
+    QString logPath = "C:/ProgramData/auto_shutdown/log.log";
     QFile::remove(logPath);
 
     writeServiceLog("Auto Shutdown Service started");
