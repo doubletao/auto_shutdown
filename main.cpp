@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QCoreApplication>
 #include <QMainWindow>
 #include <QSystemTrayIcon>
 #include <QMenu>
@@ -15,6 +16,9 @@
 #include <QDateTime>
 #include <QCloseEvent>
 #include <QStyle>
+#include <QFile>
+#include <QDir>
+#include <QStandardPaths>
 #include <windows.h>
 
 class ShutdownDialog : public QDialog
@@ -277,9 +281,128 @@ private:
     int m_shutdownCountdown;
 };
 
+void writeServiceLog(const QString &message)
+{
+    QString docPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    QString logDir = docPath + "/auto_shutdown";
+    QString logPath = logDir + "/log.log";
+
+    QDir().mkpath(logDir);
+
+    QFile file(logPath);
+    if (file.open(QIODevice::Append | QIODevice::Text))
+    {
+        QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+        file.write(QString("[%1] %2\n").arg(timestamp, message).toUtf8());
+        file.close();
+    }
+}
+
+void runServiceMode(int detectInterval, int shutdownCountdown)
+{
+    HANDLE hMutex = CreateMutexW(NULL, TRUE, L"AutoShutdown_Service_Mutex");
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        CloseHandle(hMutex);
+        return;
+    }
+
+    // Clear log on startup
+    QString docPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    QString logPath = docPath + "/auto_shutdown/log.log";
+    QFile::remove(logPath);
+
+    writeServiceLog("Auto Shutdown Service started");
+    writeServiceLog(QString("Detection interval: %1 seconds").arg(detectInterval));
+    writeServiceLog(QString("Shutdown countdown: %1 seconds").arg(shutdownCountdown));
+
+    while (true)
+    {
+        SYSTEM_POWER_STATUS sps;
+        if (!GetSystemPowerStatus(&sps))
+        {
+            writeServiceLog("Power status: FAILED");
+        }
+        else if (sps.ACLineStatus == 1)
+        {
+            writeServiceLog(QString("Power status: AC Power (battery %1%)").arg(sps.BatteryLifePercent));
+        }
+        else if (sps.ACLineStatus == 0)
+        {
+            writeServiceLog(QString("Power status: BATTERY (battery %1%) - waiting %2s before shutdown")
+                           .arg(sps.BatteryLifePercent).arg(shutdownCountdown));
+
+            Sleep(shutdownCountdown * 1000);
+
+            // Double check after countdown
+            if (GetSystemPowerStatus(&sps) && sps.ACLineStatus == 0)
+            {
+                writeServiceLog("Performing system shutdown");
+
+                HANDLE hToken;
+                TOKEN_PRIVILEGES tkp;
+
+                if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
+                {
+                    LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid);
+                    tkp.PrivilegeCount = 1;
+                    tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+                    AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0);
+
+                    if (GetLastError() == ERROR_SUCCESS)
+                        ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCEIFHUNG, SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER);
+
+                    CloseHandle(hToken);
+                }
+            }
+            else
+            {
+                writeServiceLog("Power restored, shutdown cancelled");
+            }
+        }
+        else
+        {
+            writeServiceLog("Power status: UNKNOWN");
+        }
+
+        Sleep(detectInterval * 1000);
+    }
+
+    ReleaseMutex(hMutex);
+    CloseHandle(hMutex);
+}
+
 int main(int argc, char *argv[])
 {
-    HANDLE hMutex = CreateMutexW(NULL, TRUE, L"AutoShutdown_Singleton_Mutex");
+    bool serviceMode = false;
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "--service") == 0)
+        {
+            serviceMode = true;
+            break;
+        }
+    }
+
+    // Load config
+    QString configPath = QCoreApplication::applicationDirPath() + "/config.ini";
+    QSettings settings(configPath, QSettings::IniFormat);
+    int detectInterval = settings.value("General/DetectInterval", 300).toInt();
+    int shutdownCountdown = settings.value("General/ShutdownCountdown", 60).toInt();
+
+    if (detectInterval < 1) detectInterval = 1;
+    if (shutdownCountdown < 1) shutdownCountdown = 1;
+
+    if (serviceMode)
+    {
+        // Use QCoreApplication for service mode (no GUI resources)
+        QCoreApplication app(argc, argv);
+        runServiceMode(detectInterval, shutdownCountdown);
+        return 0;
+    }
+
+    // Normal UI mode - separate mutex from service mode
+    HANDLE hMutex = CreateMutexW(NULL, TRUE, L"AutoShutdown_Tray_Mutex");
     if (GetLastError() == ERROR_ALREADY_EXISTS)
     {
         CloseHandle(hMutex);
