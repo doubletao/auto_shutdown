@@ -48,6 +48,9 @@ echo.
 echo Deploying Qt libraries...
 %QT_PATH%/bin/windeployqt.exe --release --no-translations --no-system-d3d-compiler --no-compiler-runtime Release/auto_shutdown.exe
 if %ERRORLEVEL% EQU 0 (
+    echo Copying config.ini...
+    copy /Y ..\config.ini Release\ >nul
+
     echo.
     echo ========================================
     echo Build and deployment successful!

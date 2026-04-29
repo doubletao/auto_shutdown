@@ -18,6 +18,10 @@ echo Deploying...
 
 if %ERRORLEVEL% EQU 0 (
     echo.
+    echo Copying config.ini...
+    copy /Y config.ini build\Release\ >nul
+
+    echo.
     echo Deployment complete!
     echo You can now copy the entire build\Release folder to any machine
 ) else (
