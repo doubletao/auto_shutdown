@@ -269,7 +269,17 @@ private:
         AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0);
 
         if (GetLastError() == ERROR_SUCCESS)
-            ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCEIFHUNG, SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER);
+        {
+            // Use InitiateSystemShutdownEx for better reliability
+            InitiateSystemShutdownExW(
+                NULL,
+                NULL,
+                0,
+                TRUE,
+                FALSE,
+                SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER
+            );
+        }
 
         CloseHandle(hToken);
     }
@@ -350,7 +360,17 @@ void runServiceMode(int detectInterval, int shutdownCountdown)
                     AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0);
 
                     if (GetLastError() == ERROR_SUCCESS)
-                        ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCEIFHUNG, SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER);
+                    {
+                        // Use InitiateSystemShutdownEx for better reliability
+                        InitiateSystemShutdownExW(
+                            NULL,
+                            NULL,
+                            0,
+                            TRUE,
+                            FALSE,
+                            SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER
+                        );
+                    }
 
                     CloseHandle(hToken);
                 }
