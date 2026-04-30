@@ -316,9 +316,18 @@ void runServiceMode(int detectInterval, int shutdownCountdown)
         return;
     }
 
-    // Clear log on startup
-    QString logPath = "C:/ProgramData/auto_shutdown/log.log";
-    QFile::remove(logPath);
+    // Backup old log before starting new log
+    QString logDir = "C:/ProgramData/auto_shutdown";
+    QString logPath = logDir + "/log.log";
+    QString lastLogPath = logDir + "/last.log";
+
+    QDir().mkpath(logDir);
+
+    // Remove old last.log if exists, then rename current log.log to last.log
+    if (QFile::exists(lastLogPath))
+        QFile::remove(lastLogPath);
+    if (QFile::exists(logPath))
+        QFile::rename(logPath, lastLogPath);
 
     writeServiceLog("Auto Shutdown Service started");
     writeServiceLog(QString("Detection interval: %1 seconds").arg(detectInterval));
