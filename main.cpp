@@ -420,6 +420,9 @@ int main(int argc, char *argv[])
     if (detectInterval < 1) detectInterval = 1;
     if (shutdownCountdown < 1) shutdownCountdown = 1;
 
+    // Prevent system from auto-sleeping while application is running
+    SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED);
+
     if (serviceMode)
     {
         // Use QCoreApplication for service mode (no GUI resources)
